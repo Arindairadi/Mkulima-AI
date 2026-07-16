@@ -1,0 +1,14 @@
+workflows:
+  android-workflow:
+    name: Mkulima AI Android Build
+    max_build_duration: 30
+    working_directory: app
+    environment:
+      flutter: stable
+    scripts:
+      - name: Get Flutter packages
+        script: flutter pub get
+      - name: Build APK
+        script: flutter build apk --debug --dart-define=ENV=dev --dart-define=API_BASE_URL=https://mkulima-ai-backend.onrender.com
+    artifacts:
+      - build/**/outputs/**/*.apk
