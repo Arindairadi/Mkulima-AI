@@ -21,6 +21,9 @@ class Settings:
         self.gemini_model: str = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
         self.allowed_origins: list[str] = os.environ.get("ALLOWED_ORIGINS", "*").split(",")
         self.environment: str = os.environ.get("ENVIRONMENT", "dev")
+        self.weatherapi_key: str = os.environ.get("WEATHERAPI_KEY", "")
+        if not self.weatherapi_key:
+            print("WARNING: WEATHERAPI_KEY is not set. The weather endpoint will fail until it is configured.")
 
         if not self.gemini_api_key:
             # Fail loudly rather than silently returning broken AI responses.
