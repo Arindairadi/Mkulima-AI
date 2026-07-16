@@ -1,33 +1,33 @@
-import asyncio
 import time
-from datetime import datetime, timedelta
 
 import httpx
 
-OPEN_METEO_URL = "https://api.open-meteo.com/v1/forecast"
+from ..config import get_settings
+
+settings = get_settings()
+
+WEATHERAPI_URL = "https://api.weatherapi.com/v1/forecast.json"
 
 # Simple in-memory cache: (rounded_lat, rounded_lon) -> (timestamp, response_json)
-# Coordinates are rounded to ~1km precision so nearby requests (e.g. a farmer
-# opening the app twice from roughly the same spot) hit the cache instead of
-# Open-Meteo again. This also directly reduces how often we can trip the
-# shared-IP rate limit described below.
 _CACHE: dict[tuple[float, float], tuple[float, dict]] = {}
-_CACHE_TTL_SECONDS = 600  # 10 minutes — weather doesn't change fast enough to need fresher data than this
+_CACHE_TTL_SECONDS = 600  # 10 minutes
 
 
 async def fetch_live_forecast(lat: float, lon: float) -> dict:
     """
-    Fetches real, live weather data from Open-Meteo (https://open-meteo.com) —
-    a free, no-API-key-required weather service. This is genuine live data,
-    not simulated.
+    Fetches real, live weather data from WeatherAPI.com.
 
-    Includes a short-lived cache and automatic retry-with-backoff on 429s,
-    since Open-Meteo enforces its rate limit per IP address — and on shared
-    hosting platforms (like Render's free tier), other unrelated apps on the
-    same outbound IP can exhaust that shared quota, causing 429s even on your
-    very first request. This does not fully eliminate that risk (it's outside
-    our control), but caching plus a couple of retries handles it in most cases.
+    Uses key-based authentication (WEATHERAPI_KEY) rather than Open-Meteo's
+    keyless, IP-rate-limited free API. This matters specifically because
+    on shared hosting platforms like Render's free tier, many unrelated
+    apps share the same outbound IP address — with a keyless, per-IP-limited
+    API, one of those other apps exhausting the shared quota causes 429s
+    for everyone on that IP, including on a service's very first request.
+    Key-based auth ties the quota to this specific account instead.
     """
+    if not settings.weatherapi_key:
+        raise RuntimeError("WEATHERAPI_KEY is not configured on the server.")
+
     cache_key = (round(lat, 2), round(lon, 2))
     now = time.time()
 
@@ -36,68 +36,28 @@ async def fetch_live_forecast(lat: float, lon: float) -> dict:
         return cached[1]
 
     params = {
-        "latitude": lat,
-        "longitude": lon,
-        "current": "temperature_2m,relative_humidity_2m,wind_speed_10m",
-        "daily": "temperature_2m_max,temperature_2m_min,precipitation_probability_max,weather_code",
-        "timezone": "auto",
-        "forecast_days": 5,
+        "key": settings.weatherapi_key,
+        "q": f"{lat},{lon}",
+        "days": 5,
+        "aqi": "no",
+        "alerts": "no",
     }
 
-    last_error = None
     async with httpx.AsyncClient(timeout=10.0) as client:
-        for attempt in range(3):
-            response = await client.get(OPEN_METEO_URL, params=params)
-
-            if response.status_code == 429:
-                last_error = httpx.HTTPStatusError(
-                    "429 Too Many Requests", request=response.request, response=response
-                )
-                if attempt < 2:
-                    await asyncio.sleep(1.5 * (attempt + 1))  # 1.5s, then 3s
-                    continue
-                raise last_error
-
-            response.raise_for_status()
-            data = response.json()
-            _CACHE[cache_key] = (now, data)
-            return data
-
-    raise last_error
+        response = await client.get(WEATHERAPI_URL, params=params)
+        response.raise_for_status()
+        data = response.json()
+        _CACHE[cache_key] = (now, data)
+        return data
 
 
-def weather_code_to_condition(code: int) -> str:
-    """Maps Open-Meteo's WMO weather codes to short human-readable labels."""
-    mapping = {
-        0: "Clear sky",
-        1: "Mainly clear",
-        2: "Partly cloudy",
-        3: "Overcast",
-        45: "Fog",
-        48: "Fog",
-        51: "Light drizzle",
-        53: "Drizzle",
-        55: "Heavy drizzle",
-        61: "Light rain",
-        63: "Rain",
-        65: "Heavy rain",
-        71: "Light snow",
-        80: "Rain showers",
-        81: "Rain showers",
-        82: "Violent rain showers",
-        95: "Thunderstorm",
-        96: "Thunderstorm with hail",
-        99: "Thunderstorm with hail",
-    }
-    return mapping.get(code, "Variable conditions")
-
-
-def determine_alert_level(daily: dict) -> str:
+def determine_alert_level(forecast_days: list[dict]) -> str:
     """
-    Simple rule-based alert logic: flags flood risk on very high rain
-    probability, drought risk on a sustained run of near-zero rain chance.
+    Simple rule-based alert logic using WeatherAPI's daily_chance_of_rain
+    field: flags flood risk on very high rain probability in the next 2
+    days, drought risk on a sustained run of near-zero rain chance.
     """
-    rain_chances = daily.get("precipitation_probability_max", [])
+    rain_chances = [day.get("day", {}).get("daily_chance_of_rain", 0) for day in forecast_days]
     if not rain_chances:
         return "none"
 
