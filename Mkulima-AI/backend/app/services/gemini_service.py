@@ -79,7 +79,12 @@ def analyze_crop_image(image_bytes: bytes, mime_type: str, crop_name: str) -> di
         ],
         config=types.GenerateContentConfig(
             temperature=0.2,  # low temperature: we want consistent, careful diagnoses
-            max_output_tokens=500,
+            max_output_tokens=800,
+            # Disable "thinking" — its tokens are deducted from max_output_tokens
+            # on gemini-2.5-flash, and this structured-JSON task doesn't need
+            # deep reasoning. Without this, low token budgets get consumed by
+            # invisible thinking and the visible answer comes back truncated.
+            thinking_config=types.ThinkingConfig(thinking_budget=0),
         ),
     )
 
@@ -99,7 +104,8 @@ def ask_voice_assistant(text: str, language_label: str) -> str:
         config=types.GenerateContentConfig(
             system_instruction=system_instruction,
             temperature=0.4,
-            max_output_tokens=300,
+            max_output_tokens=500,
+            thinking_config=types.ThinkingConfig(thinking_budget=0),
         ),
     )
     return response.text.strip()
@@ -116,6 +122,10 @@ def generate_weather_recommendation(weather_summary: str) -> str:
             "timing. Be specific and actionable, plain language, no jargon.\n\n"
             f"Forecast: {weather_summary}"
         ),
-        config=types.GenerateContentConfig(temperature=0.3, max_output_tokens=120),
+        config=types.GenerateContentConfig(
+            temperature=0.3,
+            max_output_tokens=200,
+            thinking_config=types.ThinkingConfig(thinking_budget=0),
+        ),
     )
     return response.text.strip()
