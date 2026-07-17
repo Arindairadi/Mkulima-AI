@@ -44,7 +44,12 @@ async def get_weather(
     )
     try:
         recommendation = gemini_service.generate_weather_recommendation(summary)
-    except Exception:
+    except Exception as e:
+        # Log the real reason instead of silently falling back — this exact
+        # silent-swallow is what made an SDK version mismatch look like a
+        # working (but wrong) response earlier. Falling back is still the
+        # right behavior for the farmer, but we should be able to see why.
+        print(f"WARNING: Gemini weather recommendation failed, using fallback: {e}")
         recommendation = (
             "Heavy rain expected soon — delay fertilizer application until the soil dries."
             if alert_level == "flood"
