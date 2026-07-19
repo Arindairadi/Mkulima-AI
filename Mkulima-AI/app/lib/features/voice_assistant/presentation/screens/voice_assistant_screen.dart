@@ -73,10 +73,34 @@ class _VoiceAssistantScreenState extends ConsumerState<VoiceAssistantScreen> {
                     itemBuilder: (context, i) => _MessageBubble(message: state.messages[i]),
                   ),
           ),
+          if (state.isListening)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppConstants.spaceMd, vertical: 4),
+              child: Row(
+                children: [
+                  const Icon(Icons.graphic_eq, color: AppColors.danger, size: 18),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      state.liveTranscript.isEmpty ? 'Listening…' : state.liveTranscript,
+                      style: const TextStyle(color: AppColors.textSecondary, fontStyle: FontStyle.italic),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           if (state.isThinking)
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 8),
               child: Text('Mkulima AI is thinking…', style: TextStyle(color: AppColors.textSecondary)),
+            ),
+          if (!state.speechAvailable)
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: AppConstants.spaceMd, vertical: 4),
+              child: Text(
+                'Voice input needs microphone permission. Tap the mic to allow it.',
+                style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+              ),
             ),
           SafeArea(
             child: Padding(
@@ -89,10 +113,11 @@ class _VoiceAssistantScreenState extends ConsumerState<VoiceAssistantScreen> {
                       color: state.isListening ? AppColors.danger : AppColors.primary,
                     ),
                     onPressed: () {
-                      // speech_to_text integration point: startListening() /
-                      // stopListening() would populate _textController with
-                      // recognized speech in the farmer's selected language.
-                      controller.toggleListening();
+                      if (state.isListening) {
+                        controller.stopListening();
+                      } else {
+                        controller.startListening();
+                      }
                     },
                   ),
                   Expanded(
