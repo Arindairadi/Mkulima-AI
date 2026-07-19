@@ -45,7 +45,7 @@ class WeatherResponse(BaseModel):
     forecast: list[DailyForecastResponse]
 
 
-# ---- Market (simulated — see README for why) ----
+# ---- Market (simulated prices — see README for why; distance is real) ----
 
 class MarketPriceResponse(BaseModel):
     crop_name: str
@@ -53,3 +53,5 @@ class MarketPriceResponse(BaseModel):
     price_per_kg_ugx: float
     change_percent: float
     trend_7_day: list[float]
+    distance_km: Optional[float] = None  # real, computed from farmer's device location if provided
+    is_nearest: bool = False
