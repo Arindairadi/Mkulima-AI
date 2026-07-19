@@ -52,6 +52,19 @@ class _MarketScreenState extends ConsumerState<MarketScreen> {
                 }).toList(),
               ),
               const SizedBox(height: AppConstants.spaceMd),
+              if (selectedPrices.any((p) => p.isNearest))
+                Padding(
+                  padding: const EdgeInsets.only(bottom: AppConstants.spaceMd),
+                  child: Builder(builder: (context) {
+                    final nearest = selectedPrices.firstWhere((p) => p.isNearest);
+                    return AppAlertBanner(
+                      message: '${nearest.marketName} is your nearest market'
+                          '${nearest.distanceKm != null ? ' (~${nearest.distanceKm!.round()} km away)' : ''}.',
+                      color: AppColors.success,
+                      icon: Icons.near_me_outlined,
+                    );
+                  }),
+                ),
               if (best != null && worst != null && best.marketName != worst.marketName)
                 AppAlertBanner(
                   message:
@@ -113,8 +126,20 @@ class _MarketPriceRow extends StatelessWidget {
     final up = price.changePercent >= 0;
     return Card(
       child: ListTile(
-        title: Text(price.marketName),
-        subtitle: Text(_currency.format(price.pricePerKgUgx)),
+        title: Row(
+          children: [
+            Text(price.marketName),
+            if (price.isNearest) ...[
+              const SizedBox(width: 6),
+              const Icon(Icons.near_me, size: 14, color: AppColors.success),
+            ],
+          ],
+        ),
+        subtitle: Text(
+          price.distanceKm != null
+              ? '${_currency.format(price.pricePerKgUgx)} · ~${price.distanceKm!.round()} km away'
+              : _currency.format(price.pricePerKgUgx),
+        ),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
