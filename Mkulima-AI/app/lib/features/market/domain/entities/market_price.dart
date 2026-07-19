@@ -6,6 +6,8 @@ class MarketPrice extends Equatable {
   final double pricePerKgUgx;
   final double changePercent; // vs last week, +ve = up
   final List<double> trend7Day;
+  final double? distanceKm; // real, computed from farmer's device location when available
+  final bool isNearest;
 
   const MarketPrice({
     required this.cropName,
@@ -13,8 +15,11 @@ class MarketPrice extends Equatable {
     required this.pricePerKgUgx,
     required this.changePercent,
     required this.trend7Day,
+    this.distanceKm,
+    this.isNearest = false,
   });
 
   @override
-  List<Object?> get props => [cropName, marketName, pricePerKgUgx, changePercent, trend7Day];
+  List<Object?> get props =>
+      [cropName, marketName, pricePerKgUgx, changePercent, trend7Day, distanceKm, isNearest];
 }
