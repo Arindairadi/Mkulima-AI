@@ -1,50 +1,28 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:geolocator/geolocator.dart';
 
+import '../../../../core/location/location_provider.dart';
 import '../../../../core/network/api_client_provider.dart';
 import '../../domain/entities/weather_entity.dart';
 
 /// Live weather data source.
 ///
-/// Calls the Mkulima AI backend (bulimi_ai_backend/) (`GET /api/v1/weather`), which fetches real
-/// forecast data from Open-Meteo and an AI-generated recommendation from
-/// Gemini. Tries to use the device's real GPS location via `geolocator`;
-/// if location permission is denied or unavailable, falls back to a fixed
-/// reference point (Kiryandongo, Uganda) so the feature still works.
-/// If the backend itself is unreachable, falls back further to a fully
-/// local mock forecast so the screen never shows a dead end.
+/// Calls the Mkulima AI backend (`GET /api/v1/weather`), which fetches real
+/// forecast data from WeatherAPI.com and an AI-generated recommendation
+/// from Gemini. Uses the shared `deviceLocationProvider` for the farmer's
+/// real GPS position (falls back to a fixed Uganda reference point if
+/// permission is denied). If the backend itself is unreachable, falls
+/// back further to a fully local mock forecast so the screen never shows
+/// a dead end.
 final weatherProvider = FutureProvider.autoDispose<WeatherSnapshot>((ref) async {
   final apiClient = ref.watch(apiClientProvider);
+  final location = await ref.watch(deviceLocationProvider.future);
 
-  double lat = 1.6667; // Kiryandongo, Uganda — fallback reference point
-  double lon = 32.0;
-  String villageName = 'Kiryandongo';
-
-  try {
-    final permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      final requested = await Geolocator.requestPermission();
-      if (requested != LocationPermission.denied && requested != LocationPermission.deniedForever) {
-        final position = await Geolocator.getCurrentPosition();
-        lat = position.latitude;
-        lon = position.longitude;
-        villageName = 'Your location';
-      }
-    } else if (permission != LocationPermission.deniedForever) {
-      final position = await Geolocator.getCurrentPosition();
-      lat = position.latitude;
-      lon = position.longitude;
-      villageName = 'Your location';
-    }
-  } catch (_) {
-    // Location unavailable (emulator, permission denied, etc.) — proceed
-    // with the fallback reference point set above.
-  }
+  final villageName = location.isReal ? 'Your location' : 'Kiryandongo';
 
   try {
     final response = await apiClient.get<Map<String, dynamic>>(
       '/api/v1/weather',
-      queryParameters: {'lat': lat, 'lon': lon, 'village_name': villageName},
+      queryParameters: {'lat': location.latitude, 'lon': location.longitude, 'village_name': villageName},
     );
     final data = response.data!;
     final forecastList = (data['forecast'] as List).map((f) {
@@ -67,8 +45,6 @@ final weatherProvider = FutureProvider.autoDispose<WeatherSnapshot>((ref) async 
       forecast: forecastList,
     );
   } catch (e) {
-    // Backend unreachable — fall back to a local mock forecast rather than
-    // showing an error screen. Clearly a fallback, not a real forecast.
     final now = DateTime.now();
     return WeatherSnapshot(
       village: '$villageName (offline)',
