@@ -42,12 +42,22 @@ class WeatherScreen extends ConsumerWidget {
                     const SizedBox(height: AppConstants.spaceMd),
                   ],
                   AppSectionCard(
-                    title: '5-day forecast',
+                    title: '${weather.forecast.length}-day forecast',
                     icon: Icons.calendar_month_outlined,
                     child: Column(
-                      children: weather.forecast
-                          .map((f) => _ForecastRow(forecast: f))
-                          .toList(),
+                      children: [
+                        ...weather.forecast.map((f) => _ForecastRow(forecast: f)),
+                        if (weather.forecast.length < 7) ...[
+                          const SizedBox(height: 6),
+                          Text(
+                            'Free weather plan shows up to 3 days ahead.',
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: AppColors.textSecondary,
+                                  fontStyle: FontStyle.italic,
+                                ),
+                          ),
+                        ],
+                      ],
                     ),
                   ),
                   const SizedBox(height: AppConstants.spaceMd),
@@ -91,7 +101,7 @@ class _CurrentConditions extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(weather.village, style: const TextStyle(color: Colors.white70, fontSize: 16)),
+          Text(weather.locationLabel, style: const TextStyle(color: Colors.white70, fontSize: 16)),
           const SizedBox(height: 4),
           Text(
             '${weather.currentTempC.round()}°C',
