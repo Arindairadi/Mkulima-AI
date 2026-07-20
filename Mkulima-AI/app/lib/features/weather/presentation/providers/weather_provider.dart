@@ -4,15 +4,6 @@ import '../../../../core/location/location_provider.dart';
 import '../../../../core/network/api_client_provider.dart';
 import '../../domain/entities/weather_entity.dart';
 
-/// Live weather data source.
-///
-/// Calls the Mkulima AI backend (`GET /api/v1/weather`), which fetches real
-/// forecast data from WeatherAPI.com and an AI-generated recommendation
-/// from Gemini. Uses the shared `deviceLocationProvider` for the farmer's
-/// real GPS position (falls back to a fixed Uganda reference point if
-/// permission is denied). If the backend itself is unreachable, falls
-/// back further to a fully local mock forecast so the screen never shows
-/// a dead end.
 final weatherProvider = FutureProvider.autoDispose<WeatherSnapshot>((ref) async {
   final apiClient = ref.watch(apiClientProvider);
   final location = await ref.watch(deviceLocationProvider.future);
@@ -37,6 +28,8 @@ final weatherProvider = FutureProvider.autoDispose<WeatherSnapshot>((ref) async 
 
     return WeatherSnapshot(
       village: data['village'] as String,
+      subcounty: data['subcounty'] as String?,
+      district: data['district'] as String?,
       currentTempC: (data['current_temp_c'] as num).toDouble(),
       humidityPercent: data['humidity_percent'] as int,
       windKph: (data['wind_kph'] as num).toDouble(),
@@ -54,7 +47,7 @@ final weatherProvider = FutureProvider.autoDispose<WeatherSnapshot>((ref) async 
       alertLevel: WeatherAlertLevel.none,
       aiRecommendation: 'Could not reach the weather service. Showing a placeholder — connect to the '
           'internet for a real forecast.',
-      forecast: List.generate(5, (i) {
+      forecast: List.generate(3, (i) {
         return DailyForecast(
           date: now.add(Duration(days: i)),
           tempHighC: 26,
