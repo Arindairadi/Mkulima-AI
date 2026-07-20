@@ -23,6 +23,8 @@ class DailyForecast extends Equatable {
 
 class WeatherSnapshot extends Equatable {
   final String village;
+  final String? subcounty;
+  final String? district;
   final double currentTempC;
   final int humidityPercent;
   final double windKph;
@@ -32,6 +34,8 @@ class WeatherSnapshot extends Equatable {
 
   const WeatherSnapshot({
     required this.village,
+    this.subcounty,
+    this.district,
     required this.currentTempC,
     required this.humidityPercent,
     required this.windKph,
@@ -40,7 +44,14 @@ class WeatherSnapshot extends Equatable {
     required this.forecast,
   });
 
+  /// A readable "Village, Subcounty, District" string, skipping any parts
+  /// that weren't resolved (reverse geocoding coverage varies by area).
+  String get locationLabel {
+    final parts = [village, subcounty, district].where((p) => p != null && p.isNotEmpty).toList();
+    return parts.isEmpty ? 'Your area' : parts.join(', ');
+  }
+
   @override
   List<Object?> get props =>
-      [village, currentTempC, humidityPercent, windKph, alertLevel, aiRecommendation, forecast];
+      [village, subcounty, district, currentTempC, humidityPercent, windKph, alertLevel, aiRecommendation, forecast];
 }
