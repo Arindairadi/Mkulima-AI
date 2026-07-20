@@ -37,11 +37,15 @@ class DailyForecastResponse(BaseModel):
 
 class WeatherResponse(BaseModel):
     village: str
+    subcounty: Optional[str] = None
+    district: Optional[str] = None
+    region: Optional[str] = None
     current_temp_c: float
     humidity_percent: int
     wind_kph: float
     alert_level: str  # "none" | "drought" | "flood"
     ai_recommendation: str
+    forecast_days_available: int  # honest count — free weather plan caps this at 3
     forecast: list[DailyForecastResponse]
 
 
