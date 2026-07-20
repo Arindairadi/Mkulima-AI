@@ -43,7 +43,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   void _next() {
     if (_index == _pages.length - 1) {
-      context.go(AppRoutes.login);
+      // Navigate to home or authentication screen after onboarding
+      context.go('/home'); // or AppRoutes.home if defined
     } else {
       _controller.nextPage(duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
     }
@@ -58,7 +59,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             Align(
               alignment: Alignment.topRight,
               child: TextButton(
-                onPressed: () => context.go(AppRoutes.login),
+                onPressed: () => context.go('/home'), // or AppRoutes.home
                 child: const Text('Skip'),
               ),
             ),
