@@ -1,6 +1,6 @@
 # Mkulima AI
 
-An AI-powered smart farming assistant built with **Flutter**, **FastAPI**, and **Google Gemini AI** to help farmers make informed decisions through real-time weather forecasts, crop disease detection, AI farming advice, and farm management tools.
+An AI-powered smart farming assistant mobile app built to help farmers make informed decisions through real-time weather forecasts, crop disease detection, AI farming advice, and farm management tools.
 
 ## Features
 
