@@ -6,7 +6,6 @@ import '../../features/dashboard/presentation/screens/splash_screen.dart';
 import '../../features/dashboard/presentation/screens/main_shell.dart';
 import '../../features/dashboard/presentation/screens/dashboard_screen.dart';
 import '../../features/onboarding/presentation/screens/onboarding_screen.dart';
-import '../../features/authentication/presentation/screens/login_screen.dart';
 import '../../features/weather/presentation/screens/weather_screen.dart';
 import '../../features/market/presentation/screens/market_screen.dart';
 import '../../features/farm_management/presentation/screens/farm_list_screen.dart';
@@ -14,32 +13,23 @@ import '../../features/voice_assistant/presentation/screens/voice_assistant_scre
 import '../../features/disease_detection/presentation/screens/disease_detection_screen.dart';
 import '../../features/notifications/presentation/screens/notifications_screen.dart';
 
-/// Route path constants. Every feature module's routes are registered in
-/// this one file so navigation stays declarative, testable, and easy to
-/// scan as the app grows past 8+ feature modules.
 class AppRoutes {
   AppRoutes._();
   static const splash = '/';
   static const onboarding = '/onboarding';
-  static const login = '/login';
 
-  // Bottom-nav tab roots
   static const dashboard = '/dashboard';
   static const weather = '/weather';
   static const market = '/market';
   static const farmManagement = '/farm-management';
   static const voiceAssistant = '/voice-assistant';
 
-  // Pushed on top of the shell (not tabs)
   static const diseaseDetection = '/disease-detection';
   static const notifications = '/notifications';
 }
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 
-/// Riverpod provider so the router can later react to auth state (e.g.
-/// redirect to /login when the user signs out) via GoRouter's `redirect`,
-/// once real Firebase Auth (rather than the mock repository) is wired in.
 final appRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     navigatorKey: _rootNavigatorKey,
@@ -55,13 +45,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const OnboardingScreen(),
       ),
       GoRoute(
-        path: AppRoutes.login,
-        builder: (context, state) => const LoginScreen(),
-      ),
-
-      // Screens pushed on top of the bottom-nav shell, reached via quick
-      // actions rather than tabs.
-      GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
         path: AppRoutes.diseaseDetection,
         builder: (context, state) => const DiseaseDetectionScreen(),
@@ -71,9 +54,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.notifications,
         builder: (context, state) => const NotificationsScreen(),
       ),
-
-      // Bottom-navigation shell: 5 tabs, each with its own navigation
-      // branch so per-tab state/history is preserved when switching tabs.
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) => MainShell(navigationShell: navigationShell),
         branches: [
